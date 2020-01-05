@@ -10,7 +10,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow, Flow
 from google.auth.transport.requests import Request
 import base64
 import sqlalchemy as db
-import time
+import os
+import ast
 
 
 # SCOPES = [
@@ -143,8 +144,7 @@ class EmailBotService:
             if zero_part['mimeType'] == 'text/plain':
                 self.message_without_attachments(update, context, message_payload_parts, from_who, to_whom, subject)
             elif zero_part['mimeType'] == 'multipart/alternative':
-                self.message_with_attachments(self, context, zero_part, message_payload_parts,
-                                              from_who, to_whom, subject)
+                self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject)
 
 
 
@@ -184,7 +184,11 @@ class EmailBotService:
 
 
 
-    def message_with_attachments(self, update, context, zero_part, message_payload_parts, from_who, to_whom, subject):
+    def message_with_attachments(self, update, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject):
+
+
+        self.get_and_send_attachments(session, mid, message_payload_parts)
+
         zero_part_parts = zero_part['parts']
         sub_zero_part = zero_part_parts[0]
         body_of_part = sub_zero_part['body']
@@ -207,12 +211,54 @@ class EmailBotService:
             with open('managers.json') as obj:
                 managers = json.load(obj)
 
+            buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
+            keyboard = InlineKeyboardMarkup(buttons)
+
             for m_chat_id in managers.values():
-                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
+                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text, reply_markup=keyboard)  # отправка сообщения в бот
 
 
 
 
+
+    def get_and_send_attachments(self, session, mid, message_payload_parts):
+        store_dir = '/home/denis/PycharmProjects/email_bot/Pybot3/attachment_files/'
+
+        for part in message_payload_parts:
+            if part['filename']:
+                attachment_id = part['body']['attachmentId']
+
+                response = session.get(f'https://www.googleapis.com/gmail/v1/users/me/messages/{mid}/attachments/{attachment_id}')
+
+                data = response.content
+
+                encoded_data_dict = ast.literal_eval(data.decode('utf-8'))
+
+                file_data = base64.urlsafe_b64decode(encoded_data_dict['data'].encode('UTF-8'))
+
+                path = ''.join([store_dir, part['filename']])
+
+                f = open(path, 'wb')
+                f.write(file_data)
+                f.close()
+
+
+
+
+
+
+
+
+
+        # for part in message_payload_parts:
+        #     if part['filename']:
+        #         file_data = base64.urlsafe_b64decode(part['body']['data'].encode('UTF-8'))
+        #
+        #         path = ''.join([store_dir, part['filename']])
+        #
+        #         f = open(path, 'w')
+        #         f.write(file_data)
+        #         f.close()
 
 
 

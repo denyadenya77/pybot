@@ -187,8 +187,6 @@ class EmailBotService:
     def message_with_attachments(self, update, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject):
 
 
-        self.get_and_send_attachments(session, mid, message_payload_parts)
-
         zero_part_parts = zero_part['parts']
         sub_zero_part = zero_part_parts[0]
         body_of_part = sub_zero_part['body']
@@ -216,12 +214,13 @@ class EmailBotService:
 
             for m_chat_id in managers.values():
                 context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text, reply_markup=keyboard)  # отправка сообщения в бот
+                self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
 
 
 
 
 
-    def get_and_send_attachments(self, session, mid, message_payload_parts):
+    def get_and_send_attachments(self, session, mid, message_payload_parts, context, m_chat_id):
         store_dir = '/home/denis/PycharmProjects/email_bot/Pybot3/attachment_files/'
 
         for part in message_payload_parts:
@@ -241,6 +240,15 @@ class EmailBotService:
                 f = open(path, 'wb')
                 f.write(file_data)
                 f.close()
+
+                with open(path, 'rb') as f:
+                    context.bot.send_document(m_chat_id, f)
+
+                os.remove(path)
+
+
+
+
 
 
 

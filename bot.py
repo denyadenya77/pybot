@@ -138,43 +138,82 @@ class EmailBotService:
 
             # ищем текст сообщения
             # достаем из сообщения его части
-            text_find = message_message['payload']['parts']
-            body_of_part = None
-            # достаем из нужной части (текст сообщения хранится под нулевым индексом) текст сообщения закодированный в
-            # формате "utf-8" и "base64"
-            for part in text_find:
-                if part['partId'] == '0':
-                    body_of_part = part['body']
-            # декодируем
-            encoded_text = body_of_part['data']
-            decodedBytes = base64.urlsafe_b64decode(encoded_text)
-            # текст сообщения сохраняем в переменную
-            decoded_text = str(decodedBytes, "utf-8")
-
-            secret_key = 'секрет'
-
-            if secret_key in subject or secret_key in decoded_text:
-                count_of_secret_messages += 1
-
-                telebot_message_text = f'Sender: {from_who}.\n' \
-                                       f'Receiver: {to_whom}.\n' \
-                                       f'Subject: {subject}.\n' \
-                                       f'Text of message: {decoded_text}'
-
-                with open('managers.json') as obj:
-                    managers = json.load(obj)
-
-                for m_chat_id in managers.values():
-                    context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
-
-                # if part['filename']:
-                #     context.bot.send_message(chat_id=update.message.chat_id, text='123465')
+            message_payload_parts = message_message['payload']['parts']
+            zero_part = message_payload_parts[0]
+            if zero_part['mimeType'] == 'text/plain':
+                self.message_without_attachments(update, context, message_payload_parts, from_who, to_whom, subject)
+            elif zero_part['mimeType'] == 'multipart/alternative':
+                self.message_with_attachments(self, context, zero_part, message_payload_parts,
+                                              from_who, to_whom, subject)
 
 
-        count_of_managers = len(managers)
 
-        context.bot.send_message(chat_id=update.message.chat_id, text=f'{count_of_managers} managers get '
-                                                                      f'{count_of_secret_messages}  of your massages.')
+
+
+
+
+
+
+    def message_without_attachments(self, update, context, message_payload_parts, from_who, to_whom, subject):
+        body_of_part = None
+        # достаем из нужной части (текст сообщения хранится под нулевым индексом) текст сообщения закодированный в
+        # формате "utf-8" и "base64"
+        for part in message_payload_parts:
+            if part['partId'] == '0':
+                body_of_part = part['body']
+        # декодируем
+        encoded_text = body_of_part['data']
+        decodedBytes = base64.urlsafe_b64decode(encoded_text)
+        # текст сообщения сохраняем в переменную
+        decoded_text = str(decodedBytes, "utf-8")
+
+        secret_key = 'секрет'
+
+        if secret_key in subject or secret_key in decoded_text:
+
+            telebot_message_text = f'Sender: {from_who}.\n' \
+                                   f'Receiver: {to_whom}.\n' \
+                                   f'Subject: {subject}.\n' \
+                                   f'Text of message: {decoded_text}'
+
+            with open('managers.json') as obj:
+                managers = json.load(obj)
+
+            for m_chat_id in managers.values():
+                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
+
+
+
+    def message_with_attachments(self, update, context, zero_part, message_payload_parts, from_who, to_whom, subject):
+        zero_part_parts = zero_part['parts']
+        sub_zero_part = zero_part_parts[0]
+        body_of_part = sub_zero_part['body']
+
+        # декодируем
+        encoded_text = body_of_part['data']
+        decodedBytes = base64.urlsafe_b64decode(encoded_text)
+        # текст сообщения сохраняем в переменную
+        decoded_text = str(decodedBytes, "utf-8")
+
+        secret_key = 'секрет'
+
+        if secret_key in subject or secret_key in decoded_text:
+
+            telebot_message_text = f'Sender: {from_who}.\n' \
+                                   f'Receiver: {to_whom}.\n' \
+                                   f'Subject: {subject}.\n' \
+                                   f'Text of message: {decoded_text}'
+
+            with open('managers.json') as obj:
+                managers = json.load(obj)
+
+            for m_chat_id in managers.values():
+                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
+
+
+
+
+
 
 
 

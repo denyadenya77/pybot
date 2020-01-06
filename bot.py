@@ -56,11 +56,11 @@ class EmailBotService:
 
         TOKEN = config.BOT_ACCESS_TOKEN
         PORT = int(os.environ.get('PORT', '8443'))
-        self.updater = Updater(TOKEN)
+        # self.updater = Updater(TOKEN)
         # add handlers
         self.updater.start_webhook(listen="0.0.0.0",
-                              port=PORT,
-                              url_path=TOKEN)
+                                   port=PORT,
+                                   url_path=TOKEN)
         self.updater.bot.set_webhook("https://botdenysdashadasha.herokuapp.com/" + TOKEN)
         self.updater.idle()
 

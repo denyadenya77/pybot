@@ -52,17 +52,17 @@ class EmailBotService:
 
     def run_bot(self):
         """Running bot."""
-        self.updater.start_webhook()
+        # self.updater.start_webhook()
 
         TOKEN = config.BOT_ACCESS_TOKEN
-        PORT = int(os.environ.get('PORT', '80'))
-        updater = Updater(TOKEN)
+        PORT = int(os.environ.get('PORT', '8443'))
+        self.updater = Updater(TOKEN)
         # add handlers
-        updater.start_webhook(listen="0.0.0.0",
+        self.updater.start_webhook(listen="0.0.0.0",
                               port=PORT,
                               url_path=TOKEN)
-        updater.bot.set_webhook("https://botdenysdashadasha.herokuapp.com/" + TOKEN)
-        updater.idle()
+        self.updater.bot.set_webhook("https://botdenysdashadasha.herokuapp.com/" + TOKEN)
+        self.updater.idle()
 
 
 

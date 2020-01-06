@@ -211,7 +211,8 @@ class EmailBotService:
 
 
     def get_and_send_attachments(self, session, mid, message_payload_parts, context, m_chat_id):
-        store_dir = '/home/denis/PycharmProjects/email_bot/Pybot3/attachment_files/'
+        # store_dir = '/home/denis/PycharmProjects/email_bot/Pybot3/attachment_files/'
+        store_dir_1 = os.getcwd()
 
         for part in message_payload_parts:
             if part['filename']:
@@ -225,7 +226,7 @@ class EmailBotService:
 
                 file_data = base64.urlsafe_b64decode(encoded_data_dict['data'].encode('UTF-8'))
 
-                path = ''.join([store_dir, part['filename']])
+                path = os.path.join(store_dir_1, part['filename'])
 
                 f = open(path, 'wb')
                 f.write(file_data)

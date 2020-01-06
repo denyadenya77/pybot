@@ -148,12 +148,6 @@ class EmailBotService:
 
 
 
-
-
-
-
-
-
     def message_without_attachments(self, update, context, message_payload_parts, from_who, to_whom, subject):
         body_of_part = None
         # достаем из нужной части (текст сообщения хранится под нулевым индексом) текст сообщения закодированный в
@@ -186,7 +180,6 @@ class EmailBotService:
 
     def message_with_attachments(self, update, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject):
 
-
         zero_part_parts = zero_part['parts']
         sub_zero_part = zero_part_parts[0]
         body_of_part = sub_zero_part['body']
@@ -209,15 +202,12 @@ class EmailBotService:
             with open('managers.json') as obj:
                 managers = json.load(obj)
 
-            buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
-            keyboard = InlineKeyboardMarkup(buttons)
+            # buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
+            # keyboard = InlineKeyboardMarkup(buttons)
 
             for m_chat_id in managers.values():
-                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text, reply_markup=keyboard)  # отправка сообщения в бот
+                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
                 self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
-
-
-
 
 
     def get_and_send_attachments(self, session, mid, message_payload_parts, context, m_chat_id):
@@ -245,31 +235,6 @@ class EmailBotService:
                     context.bot.send_document(m_chat_id, f)
 
                 os.remove(path)
-
-
-
-
-
-
-
-
-
-
-
-
-
-        # for part in message_payload_parts:
-        #     if part['filename']:
-        #         file_data = base64.urlsafe_b64decode(part['body']['data'].encode('UTF-8'))
-        #
-        #         path = ''.join([store_dir, part['filename']])
-        #
-        #         f = open(path, 'w')
-        #         f.write(file_data)
-        #         f.close()
-
-
-
 
 
     def start_command(self, update, context):

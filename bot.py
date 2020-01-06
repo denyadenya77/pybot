@@ -55,7 +55,7 @@ class EmailBotService:
         self.updater.start_webhook()
 
         TOKEN = config.BOT_ACCESS_TOKEN
-        PORT = int(os.environ.get('PORT', '8443'))
+        PORT = int(os.environ.get('PORT', '80'))
         updater = Updater(TOKEN)
         # add handlers
         updater.start_webhook(listen="0.0.0.0",

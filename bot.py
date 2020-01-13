@@ -159,7 +159,9 @@ class EmailBotService:
             if zero_part['mimeType'] == 'text/plain':
                 self.message_without_attachments(update, context, message_payload_parts, from_who, to_whom, subject)
             elif zero_part['mimeType'] == 'multipart/alternative':
-                self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject)
+                self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who,
+                                              to_whom, subject)
+        context.bot.send_message(chat_id=update.message.chat_id, text='Done.')
 
 
 

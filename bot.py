@@ -160,6 +160,7 @@ class EmailBotService:
                 self.message_without_attachments(update, context, message_payload_parts, from_who, to_whom, subject)
             elif zero_part['mimeType'] == 'multipart/alternative':
                 self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject)
+        context.bot.send_message(chat_id=update.message.chat_id, text=f'Done.')
 
 
 
@@ -189,7 +190,10 @@ class EmailBotService:
                 managers = json.load(obj)
 
             for m_chat_id in managers.values():
-                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
+                try:
+                    context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
+                except:
+                    pass
 
 
 
@@ -205,24 +209,24 @@ class EmailBotService:
         # текст сообщения сохраняем в переменную
         decoded_text = str(decodedBytes, "utf-8")
 
-        secret_key = 'секрет'
+        # secret_key = 'секрет'
+        #
+        # if secret_key in subject or secret_key in decoded_text:
 
-        if secret_key in subject or secret_key in decoded_text:
-
-            telebot_message_text = f'Sender: {from_who}.\n' \
-                                   f'Receiver: {to_whom}.\n' \
-                                   f'Subject: {subject}.\n' \
-                                   f'Text of message: {decoded_text}'
-
-            with open('managers.json') as obj:
-                managers = json.load(obj)
-
-            # buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
-            # keyboard = InlineKeyboardMarkup(buttons)
-
-            for m_chat_id in managers.values():
+        telebot_message_text = f'Sender: {from_who}.\n' \
+                               f'Receiver: {to_whom}.\n' \
+                               f'Subject: {subject}.\n' \
+                               f'Text of message: {decoded_text}'
+        with open('managers.json') as obj:
+            managers = json.load(obj)
+        # buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
+        # keyboard = InlineKeyboardMarkup(buttons)
+        for m_chat_id in managers.values():
+            try:
                 context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
-                self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
+            except:
+                pass
+            self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
 
 
     def get_and_send_attachments(self, session, mid, message_payload_parts, context, m_chat_id):

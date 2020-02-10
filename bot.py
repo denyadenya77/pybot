@@ -32,6 +32,7 @@ SCOPES = [
 class EmailBotService:
 
     LISTEN = 0
+    SECRET_KEY = ''
 
     """Service for communicate with bot and gmail."""
     def __init__(self, access_token: str):
@@ -76,8 +77,8 @@ class EmailBotService:
     def get_keys(self, update, context):
         new_keys_str = update.message.text
         if new_keys_str != '/cancel':
-            new_keys_list = new_keys_str.split()
-            update.message.reply_text(text=f'Новые ключи: {new_keys_list}')
+            self.SECRET_KEY = new_keys_str
+            update.message.reply_text(text=f'Новый ключ: {self.SECRET_KEY}')
             return ConversationHandler.END
         else:
             self.cancel_handler(update, context)
@@ -204,9 +205,9 @@ class EmailBotService:
         # текст сообщения сохраняем в переменную
         decoded_text = str(decodedBytes, "utf-8")
 
-        secret_key = 'секрет'
+        # secret_key = 'секрет'
 
-        if secret_key in subject or secret_key in decoded_text:
+        if self.SECRET_KEY in subject or self.SECRET_KEY in decoded_text:
 
             telebot_message_text = f'Sender: {from_who}.\n' \
                                    f'Receiver: {to_whom}.\n' \
@@ -238,7 +239,7 @@ class EmailBotService:
 
         # secret_key = 'секрет'
         #
-        # if secret_key in subject or secret_key in decoded_text:
+        if self.SECRET_KEY in subject or self.SECRET_KEY in decoded_text:
 
         telebot_message_text = f'Sender: {from_who}.\n' \
                                f'Receiver: {to_whom}.\n' \

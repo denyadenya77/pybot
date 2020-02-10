@@ -13,6 +13,8 @@ import sqlalchemy as db
 import os
 import ast
 import config
+from telegram.utils.request import Request as R
+from telegram import Bot
 
 
 # SCOPES = [
@@ -37,7 +39,16 @@ class EmailBotService:
     """Service for communicate with bot and gmail."""
     def __init__(self, access_token: str):
         """Initialize bot work."""
-        self.updater = Updater(token=access_token, use_context=True)
+
+        self.req = R(
+            connect_timeout=0.5,
+            read_timeout=1.0,
+        )
+        self.bot = Bot(
+            token='1074455858:AAFdZq191GnSZbG7najKVLDy8N_0l1oDWB8',
+            request=self.req)
+
+        self.updater = Updater(bot=self.bot, use_context=True)
         self.track_message = None
 
         self.chat_id = self.updater.bot

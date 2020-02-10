@@ -4,7 +4,7 @@ import json
 import pickle
 import os.path
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow, Flow
 from google.auth.transport.requests import Request
@@ -30,6 +30,9 @@ SCOPES = [
 
 
 class EmailBotService:
+
+    LISTEN = 0
+
     """Service for communicate with bot and gmail."""
     def __init__(self, access_token: str):
         """Initialize bot work."""
@@ -40,15 +43,49 @@ class EmailBotService:
 
         start_handler = CommandHandler(command="start",
                                        callback=self.start_command)
-        # cancel_handler = CommandHandler(command="cancel",
-        #                                 callback=self.cancel_command)
         get_message_handler = CommandHandler(command="getmessage",
                                              callback=self.getmessage)
         register_manager_handler = CommandHandler(command='register_manager',
                                                   callback=self.register_manager)
+
+        conv_handler = ConversationHandler(
+            entry_points=[
+                CommandHandler('ask_keys', self.ask_keys),
+            ],
+            states={
+                self.LISTEN: [
+                    MessageHandler(Filters.all, self.get_keys, pass_user_data=True)]
+            },
+            fallbacks=[
+                CommandHandler('cancel', self.cancel_handler),
+            ],
+        )
+
         self.updater.dispatcher.add_handler(start_handler)
         self.updater.dispatcher.add_handler(get_message_handler)
         self.updater.dispatcher.add_handler(register_manager_handler)
+        self.updater.dispatcher.add_handler(conv_handler)
+
+    def ask_keys(self, update, context):
+        # Спросить ключ
+        update.message.reply_text(
+            'Введите новый ключ',
+        )
+        return self.LISTEN
+
+    def get_keys(self, update, context):
+        new_keys_str = update.message.text
+        if new_keys_str != '/cancel':
+            new_keys_list = new_keys_str.split()
+            update.message.reply_text(text=f'Новые ключи: {new_keys_list}')
+            return ConversationHandler.END
+        else:
+            self.cancel_handler(update, context)
+
+    def cancel_handler(self, update, context):
+        update.message.reply_text('Отмена. Для начала с нуля нажмите /start')
+        return ConversationHandler.END
+
 
     def run_bot(self):
         """Running bot."""
@@ -63,16 +100,6 @@ class EmailBotService:
                                    url_path=TOKEN)
         self.updater.bot.set_webhook("https://botdenysdashadasha.herokuapp.com/" + TOKEN)
         self.updater.idle()
-
-
-
-
-
-    # def cancel_command(self, bot, update):
-    #     """Bot cancel command"""
-    #     text_message = "If you want start again please enter /start."
-    #     print(text_message)
-    #     bot.send_message(chat_id=update.message.chat_id, text=text_message)
 
     def get_chat_id(self, update):
         chat_id = update['message']['chat']['id']

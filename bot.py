@@ -45,7 +45,7 @@ class EmailBotService:
             read_timeout=1.0,
         )
         self.bot = Bot(
-            token='1074455858:AAFdZq191GnSZbG7najKVLDy8N_0l1oDWB8',
+            token=access_token,
             request=self.req)
 
         self.updater = Updater(bot=self.bot, use_context=True)

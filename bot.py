@@ -241,20 +241,20 @@ class EmailBotService:
         #
         if self.SECRET_KEY in subject or self.SECRET_KEY in decoded_text:
 
-        telebot_message_text = f'Sender: {from_who}.\n' \
-                               f'Receiver: {to_whom}.\n' \
-                               f'Subject: {subject}.\n' \
-                               f'Text of message: {decoded_text}'
-        with open('managers.json') as obj:
-            managers = json.load(obj)
-        # buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
-        # keyboard = InlineKeyboardMarkup(buttons)
-        for m_chat_id in managers.values():
-            try:
-                context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
-            except:
-                pass
-            self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
+            telebot_message_text = f'Sender: {from_who}.\n' \
+                                   f'Receiver: {to_whom}.\n' \
+                                   f'Subject: {subject}.\n' \
+                                   f'Text of message: {decoded_text}'
+            with open('managers.json') as obj:
+                managers = json.load(obj)
+            # buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
+            # keyboard = InlineKeyboardMarkup(buttons)
+            for m_chat_id in managers.values():
+                try:
+                    context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
+                except:
+                    pass
+                self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
 
 
     def get_and_send_attachments(self, session, mid, message_payload_parts, context, m_chat_id):

@@ -99,7 +99,7 @@ class EmailBotService:
             self.cancel_handler(update, context)
 
     def cancel_handler(self, update, context):
-        update.message.reply_text('Отмена. Для начала с нуля нажмите /start')
+        update.message.reply_text('Отмена. Для изменения ключей нажмите /ask_keys')
         return ConversationHandler.END
 
 

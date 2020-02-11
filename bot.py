@@ -59,8 +59,8 @@ class EmailBotService:
                                              callback=self.getmessage)
         register_manager_handler = CommandHandler(command='register_manager',
                                                   callback=self.register_manager)
-        cancel_handler = CommandHandler(command='cancel',
-                                        callback=self.cancel_handler)
+        cancel_hand = CommandHandler(command='cancel',
+                                     callback=self.cancel_handler)
 
         conv_handler = ConversationHandler(
             entry_points=[
@@ -71,7 +71,7 @@ class EmailBotService:
                     MessageHandler(Filters.text, self.get_keys, pass_user_data=True)]
             },
             fallbacks=[
-                self.cancel_handler,
+                cancel_hand,
             ],
         )
 

@@ -59,6 +59,8 @@ class EmailBotService:
                                              callback=self.getmessage)
         register_manager_handler = CommandHandler(command='register_manager',
                                                   callback=self.register_manager)
+        cancel_handler = CommandHandler(command='cancel',
+                                        callback=self.cancel_handler)
 
         conv_handler = ConversationHandler(
             entry_points=[
@@ -66,16 +68,18 @@ class EmailBotService:
             ],
             states={
                 self.LISTEN: [
-                    MessageHandler(Filters.all, self.get_keys, pass_user_data=True)]
+                    MessageHandler(Filters.text, self.get_keys, pass_user_data=True)]
             },
             fallbacks=[
-                CommandHandler('cancel', self.cancel_handler),
+                self.cancel_handler,
             ],
         )
 
         self.updater.dispatcher.add_handler(start_handler)
         self.updater.dispatcher.add_handler(get_message_handler)
         self.updater.dispatcher.add_handler(register_manager_handler)
+        self.updater.dispatcher.add_handler(conv_handler)
+
         self.updater.dispatcher.add_handler(conv_handler)
 
     def ask_keys(self, update, context):

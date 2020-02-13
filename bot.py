@@ -8,7 +8,6 @@ import base64
 import sqlalchemy as db
 import os
 import ast
-import config
 
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
@@ -23,12 +22,14 @@ class EmailBotService:
     def __init__(self, access_token: str):
         """Initialize bot work."""
 
+        self.access_token = access_token
+
         self.req = TelegramRequest(
             connect_timeout=0.5,
             read_timeout=1.0,
         )
         self.bot = Bot(
-            token=access_token,
+            token=self.access_token,
             request=self.req)
 
         self.updater = Updater(bot=self.bot, use_context=True)
@@ -71,7 +72,7 @@ class EmailBotService:
     def run_bot(self):
         """Running bot."""
 
-        TOKEN = config.BOT_ACCESS_TOKEN
+        TOKEN = self.access_token
         PORT = int(os.environ.get('PORT', '8443'))
 
         self.updater.start_webhook(listen="0.0.0.0",
@@ -106,24 +107,6 @@ class EmailBotService:
             scopes=SCOPES,
             redirect_uri=redirect_uri)
 
-        # # подключаемся к базе данных хероку, чтобы вытащить крайний ключ-код
-        # engine = db.create_engine('postgresql+psycopg2://vxttrrwzkdeaol:367054ad01122101b1b5d9'
-        #                           'ee099e03253d212ec914e330378952dec6c67e5174@ec2-79-125-126-20'
-        #                           '5.eu-west-1.compute.amazonaws.com/d82qavso2hgauu')
-        #
-        # connection = engine.connect()  # устанавливаем соединение
-        # metadata = db.MetaData()
-        #
-        # # из всех существующих таблиц выбираем нужную: 'hola_bottable'
-        # hola_bottable = db.Table('hola_bottable', metadata, autoload=True, autoload_with=engine)
-        #
-        # # Equivalent to 'SELECT * FROM census'
-        # query = db.select([hola_bottable])
-        # ResultProxy = connection.execute(query)
-        # ResultSet = ResultProxy.fetchall()  # возвращает список из tuple формата [(id:..., code:...)]
-        #
-        # code = ResultSet[-1][1]  # из списка строк выбираем последнюю
-
         code = self.get_code()
 
         flow.fetch_token(code=code, code_verifier="111")  # устанавливаем соединение с гуглом
@@ -148,7 +131,6 @@ class EmailBotService:
             subject = None
 
             for item in headers:
-
                 if item['name'] == 'From':
                     from_who = item['value']
                 elif item['name'] == 'To':
@@ -162,9 +144,9 @@ class EmailBotService:
             zero_part = message_payload_parts[0]
 
             if zero_part['mimeType'] == 'text/plain':
-                self.message_without_attachments(update, context, message_payload_parts, from_who, to_whom, subject)
+                self.message_without_attachments(context, message_payload_parts, from_who, to_whom, subject)
             elif zero_part['mimeType'] == 'multipart/alternative':
-                self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who,
+                self.message_with_attachments(session, mid, context, zero_part, message_payload_parts, from_who,
                                               to_whom, subject)
 
         context.bot.send_message(chat_id=update.message.chat_id, text=f'Done.')
@@ -190,8 +172,7 @@ class EmailBotService:
         code = ResultSet[-1][1]  # из списка строк выбираем последнюю
         return code
 
-
-    def message_without_attachments(self, update, context, message_payload_parts, from_who, to_whom, subject):
+    def message_without_attachments(self, context, message_payload_parts, from_who, to_whom, subject):
         """method to get Gmail message without attachments"""
 
         body_of_part = None
@@ -223,7 +204,7 @@ class EmailBotService:
                 except:
                     pass
 
-    def message_with_attachments(self, update, session, mid, context, zero_part, message_payload_parts,
+    def message_with_attachments(self, session, mid, context, zero_part, message_payload_parts,
                                  from_who, to_whom, subject):
         """method to get Gmail message with attachments"""
 

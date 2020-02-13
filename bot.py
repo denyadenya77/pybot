@@ -106,23 +106,25 @@ class EmailBotService:
             scopes=SCOPES,
             redirect_uri=redirect_uri)
 
-        # подключаемся к базе данных хероку, чтобы вытащить крайний ключ-код
-        engine = db.create_engine('postgresql+psycopg2://vxttrrwzkdeaol:367054ad01122101b1b5d9'
-                                  'ee099e03253d212ec914e330378952dec6c67e5174@ec2-79-125-126-20'
-                                  '5.eu-west-1.compute.amazonaws.com/d82qavso2hgauu')
+        # # подключаемся к базе данных хероку, чтобы вытащить крайний ключ-код
+        # engine = db.create_engine('postgresql+psycopg2://vxttrrwzkdeaol:367054ad01122101b1b5d9'
+        #                           'ee099e03253d212ec914e330378952dec6c67e5174@ec2-79-125-126-20'
+        #                           '5.eu-west-1.compute.amazonaws.com/d82qavso2hgauu')
+        #
+        # connection = engine.connect()  # устанавливаем соединение
+        # metadata = db.MetaData()
+        #
+        # # из всех существующих таблиц выбираем нужную: 'hola_bottable'
+        # hola_bottable = db.Table('hola_bottable', metadata, autoload=True, autoload_with=engine)
+        #
+        # # Equivalent to 'SELECT * FROM census'
+        # query = db.select([hola_bottable])
+        # ResultProxy = connection.execute(query)
+        # ResultSet = ResultProxy.fetchall()  # возвращает список из tuple формата [(id:..., code:...)]
+        #
+        # code = ResultSet[-1][1]  # из списка строк выбираем последнюю
 
-        connection = engine.connect()  # устанавливаем соединение
-        metadata = db.MetaData()
-
-        # из всех существующих таблиц выбираем нужную: 'hola_bottable'
-        hola_bottable = db.Table('hola_bottable', metadata, autoload=True, autoload_with=engine)
-
-        # Equivalent to 'SELECT * FROM census'
-        query = db.select([hola_bottable])
-        ResultProxy = connection.execute(query)
-        ResultSet = ResultProxy.fetchall()  # возвращает список из tuple формата [(id:..., code:...)]
-
-        code = ResultSet[-1][1]  # из списка строк выбираем последнюю
+        code = self.get_code()
 
         flow.fetch_token(code=code, code_verifier="111")  # устанавливаем соединение с гуглом
 
@@ -166,6 +168,28 @@ class EmailBotService:
                                               to_whom, subject)
 
         context.bot.send_message(chat_id=update.message.chat_id, text=f'Done.')
+
+    def get_code(self):
+        """method to get authorization code"""
+        # подключаемся к базе данных хероку, чтобы вытащить крайний ключ-код
+        engine = db.create_engine('postgresql+psycopg2://vxttrrwzkdeaol:367054ad01122101b1b5d9'
+                                  'ee099e03253d212ec914e330378952dec6c67e5174@ec2-79-125-126-20'
+                                  '5.eu-west-1.compute.amazonaws.com/d82qavso2hgauu')
+
+        connection = engine.connect()  # устанавливаем соединение
+        metadata = db.MetaData()
+
+        # из всех существующих таблиц выбираем нужную: 'hola_bottable'
+        hola_bottable = db.Table('hola_bottable', metadata, autoload=True, autoload_with=engine)
+
+        # Equivalent to 'SELECT * FROM census'
+        query = db.select([hola_bottable])
+        ResultProxy = connection.execute(query)
+        ResultSet = ResultProxy.fetchall()  # возвращает список из tuple формата [(id:..., code:...)]
+
+        code = ResultSet[-1][1]  # из списка строк выбираем последнюю
+        return code
+
 
     def message_without_attachments(self, update, context, message_payload_parts, from_who, to_whom, subject):
         """method to get Gmail message without attachments"""

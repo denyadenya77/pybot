@@ -1,26 +1,25 @@
-from __future__ import print_function
 import json
 import os.path
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
+from telegram.utils.request import Request as TelegramRequest
+from telegram import Bot
 from google_auth_oauthlib.flow import Flow
 import base64
 import sqlalchemy as db
 import os
 import ast
 import config
-from telegram.utils.request import Request as TelegramRequest
-from telegram import Bot
 
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 
 class EmailBotService:
+    """Service for communicate with bot and gmail."""
 
     LISTEN = 0
     SECRET_KEY = ''
 
-    """Service for communicate with bot and gmail."""
     def __init__(self, access_token: str):
         """Initialize bot work."""
 
@@ -81,11 +80,8 @@ class EmailBotService:
         self.updater.bot.set_webhook("https://botdenysdashadasha.herokuapp.com/" + TOKEN)
         self.updater.idle()
 
-    def get_chat_id(self, update):
-        chat_id = update['message']['chat']['id']
-        return chat_id
-
     def register_manager(self, update, context):
+        """method to add chat id to managers.jso"""
         new_manager_chat_id = update['message']['chat']['id']
         new_manager_name = update['message']['chat']['first_name']
 
@@ -99,24 +95,27 @@ class EmailBotService:
 
         context.bot.send_message(chat_id=update.message.chat_id, text=f'{new_manager_name} - {new_manager_chat_id}')
 
-
     def getmessage(self, update, context):
-        redirect_uri = "https://thawing-ridge-47246.herokuapp.com"  # используем ссылку на хероку
+        """execute message uploading process"""
+
+        redirect_uri = "https://thawing-ridge-47246.herokuapp.com"
+
         # настройка соединения
         flow = Flow.from_client_secrets_file(
             'credentials.json',
             scopes=SCOPES,
             redirect_uri=redirect_uri)
 
-        # engine = db.create_engine('sqlite:////home/denis/PycharmProjects/email_bot/helloworld/db.sqlite3')
-        # engine = db.create_engine('postgresql+psycopg2://tdlmpahyaeqjii:84ecbd8bb4f36d2ac3d4c82ee1434d37bcf0b3ba49da73e1aa3b2819cc723b29@ec2-107-21-209-1.compute-1.amazonaws.com/dfv8rpsfcop1eb')
-
         # подключаемся к базе данных хероку, чтобы вытащить крайний ключ-код
-        engine = db.create_engine('postgresql+psycopg2://vxttrrwzkdeaol:367054ad01122101b1b5d9ee099e03253d212ec914e330378952dec6c67e5174@ec2-79-125-126-205.eu-west-1.compute.amazonaws.com/d82qavso2hgauu')
+        engine = db.create_engine('postgresql+psycopg2://vxttrrwzkdeaol:367054ad01122101b1b5d9'
+                                  'ee099e03253d212ec914e330378952dec6c67e5174@ec2-79-125-126-20'
+                                  '5.eu-west-1.compute.amazonaws.com/d82qavso2hgauu')
 
         connection = engine.connect()  # устанавливаем соединение
         metadata = db.MetaData()
-        hola_bottable = db.Table('hola_bottable', metadata, autoload=True, autoload_with=engine)  # из всех существующих таблиц выбираем нужную: 'hola_bottable'
+
+        # из всех существующих таблиц выбираем нужную: 'hola_bottable'
+        hola_bottable = db.Table('hola_bottable', metadata, autoload=True, autoload_with=engine)
 
         # Equivalent to 'SELECT * FROM census'
         query = db.select([hola_bottable])
@@ -127,14 +126,10 @@ class EmailBotService:
 
         flow.fetch_token(code=code, code_verifier="111")  # устанавливаем соединение с гуглом
 
-        # You can use flow.credentials, or you can just get a requests session
-        # using flow.authorized_session.
-        # credentials = flow.credentials()
         session = flow.authorized_session()  # создаем сессию
         response = session.get('https://www.googleapis.com/gmail/v1/users/me/messages').json()  # формируем запрос и получаем ответ сервера
 
         messages = response["messages"]
-        count_of_secret_messages = 0
 
         # у каждого из сообщений достаем id
         for message in messages[0:10]:
@@ -163,28 +158,30 @@ class EmailBotService:
             # достаем из сообщения его части
             message_payload_parts = message_message['payload']['parts']
             zero_part = message_payload_parts[0]
+
             if zero_part['mimeType'] == 'text/plain':
                 self.message_without_attachments(update, context, message_payload_parts, from_who, to_whom, subject)
             elif zero_part['mimeType'] == 'multipart/alternative':
-                self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject)
+                self.message_with_attachments(self, session, mid, context, zero_part, message_payload_parts, from_who,
+                                              to_whom, subject)
+
         context.bot.send_message(chat_id=update.message.chat_id, text=f'Done.')
 
-
-
     def message_without_attachments(self, update, context, message_payload_parts, from_who, to_whom, subject):
+        """method to get Gmail message without attachments"""
+
         body_of_part = None
+
         # достаем из нужной части (текст сообщения хранится под нулевым индексом) текст сообщения закодированный в
         # формате "utf-8" и "base64"
         for part in message_payload_parts:
             if part['partId'] == '0':
                 body_of_part = part['body']
+
         # декодируем
         encoded_text = body_of_part['data']
         decodedBytes = base64.urlsafe_b64decode(encoded_text)
-        # текст сообщения сохраняем в переменную
-        decoded_text = str(decodedBytes, "utf-8")
-
-        # secret_key = 'секрет'
+        decoded_text = str(decodedBytes, "utf-8")  # текст сообщения сохраняем в переменную
 
         if self.SECRET_KEY in subject or self.SECRET_KEY in decoded_text:
 
@@ -202,9 +199,9 @@ class EmailBotService:
                 except:
                     pass
 
-
-
-    def message_with_attachments(self, update, session, mid, context, zero_part, message_payload_parts, from_who, to_whom, subject):
+    def message_with_attachments(self, update, session, mid, context, zero_part, message_payload_parts,
+                                 from_who, to_whom, subject):
+        """method to get Gmail message with attachments"""
 
         zero_part_parts = zero_part['parts']
         sub_zero_part = zero_part_parts[0]
@@ -213,60 +210,54 @@ class EmailBotService:
         # декодируем
         encoded_text = body_of_part['data']
         decodedBytes = base64.urlsafe_b64decode(encoded_text)
-        # текст сообщения сохраняем в переменную
-        decoded_text = str(decodedBytes, "utf-8")
+        decoded_text = str(decodedBytes, "utf-8")  # текст сообщения сохраняем в переменную
 
-        # secret_key = 'секрет'
-        #
         if self.SECRET_KEY in subject or self.SECRET_KEY in decoded_text:
 
             telebot_message_text = f'Sender: {from_who}.\n' \
                                    f'Receiver: {to_whom}.\n' \
                                    f'Subject: {subject}.\n' \
                                    f'Text of message: {decoded_text}'
+
             with open('managers.json') as obj:
                 managers = json.load(obj)
-            # buttons = [[InlineKeyboardButton(text='Get attachments', callback_data='111')]]
-            # keyboard = InlineKeyboardMarkup(buttons)
+
             for m_chat_id in managers.values():
                 try:
                     context.bot.send_message(chat_id=m_chat_id, text=telebot_message_text)  # отправка сообщения в бот
                 except:
                     pass
+
                 self.get_and_send_attachments(session, mid, message_payload_parts, context, m_chat_id)
 
-
     def get_and_send_attachments(self, session, mid, message_payload_parts, context, m_chat_id):
-        # store_dir = '/home/denis/PycharmProjects/email_bot/Pybot3/attachment_files/'
+        """method to and send Gmail attachments"""
+
         store_dir_1 = os.getcwd()
 
         for part in message_payload_parts:
             if part['filename']:
                 attachment_id = part['body']['attachmentId']
 
-                response = session.get(f'https://www.googleapis.com/gmail/v1/users/me/messages/{mid}/attachments/{attachment_id}')
+                response = session.get(f'https://www.googleapis.com/gmail/v1/users/me/'
+                                       f'messages/{mid}/attachments/{attachment_id}')
 
                 data = response.content
-
                 encoded_data_dict = ast.literal_eval(data.decode('utf-8'))
-
                 file_data = base64.urlsafe_b64decode(encoded_data_dict['data'].encode('UTF-8'))
 
                 path = os.path.join(store_dir_1, part['filename'])
 
-                f = open(path, 'wb')
-                f.write(file_data)
-                f.close()
-
+                # запись данных в файловую систему, чтение, отправка и удаление
+                with open(path, 'wb') as file_object:
+                    file_object.write(file_data)
                 with open(path, 'rb') as f:
                     context.bot.send_document(m_chat_id, f)
-
                 os.remove(path)
-
 
     def start_command(self, update, context):
         """Bot start command"""
-        creds = None
+
         redirect_uri = "https://thawing-ridge-47246.herokuapp.com"
         flow = Flow.from_client_secrets_file(
             'credentials.json',
@@ -274,7 +265,6 @@ class EmailBotService:
             redirect_uri=redirect_uri
         )
         flow.code_verifier = "111"
-
 
         # Tell the user to go to the authorization URL.
         auth_url, _ = flow.authorization_url(prompt='consent',  access_type='offline', include_granted_scopes='true')

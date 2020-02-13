@@ -1,34 +1,18 @@
-#Email Bot Service
 from __future__ import print_function
 import json
-import pickle
 import os.path
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow, Flow
-from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import Flow
 import base64
 import sqlalchemy as db
 import os
 import ast
 import config
-from telegram.utils.request import Request as R
+from telegram.utils.request import Request as TelegramRequest
 from telegram import Bot
 
 
-# SCOPES = [
-#     "https://www.googleapis.com/auth/gmail.modify",
-#     "https://www.googleapis.com/auth/gmail.metadata"
-# ]
-SCOPES = [
-    # 'https://www.googleapis.com/auth/gmail.metadata',
-    # 'https://www.googleapis.com/auth/userinfo.email',
-    # 'openid',
-    # 'https://www.googleapis.com/auth/gmail.modify',
-    # 'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/gmail.readonly'
-]
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 
 class EmailBotService:
@@ -40,7 +24,7 @@ class EmailBotService:
     def __init__(self, access_token: str):
         """Initialize bot work."""
 
-        self.req = R(
+        self.req = TelegramRequest(
             connect_timeout=0.5,
             read_timeout=1.0,
         )
@@ -50,7 +34,6 @@ class EmailBotService:
 
         self.updater = Updater(bot=self.bot, use_context=True)
         self.track_message = None
-
         self.chat_id = self.updater.bot
 
         start_handler = CommandHandler(command="start",
@@ -61,56 +44,37 @@ class EmailBotService:
                                                   callback=self.register_manager)
         cancel_hand = CommandHandler(command='cancel',
                                      callback=self.cancel_handler)
-
-        conv_handler = ConversationHandler(
-            entry_points=[
-                CommandHandler('ask_keys', self.ask_keys),
-            ],
-            states={
-                self.LISTEN: [
-                    MessageHandler(Filters.text, self.get_keys, pass_user_data=True)]
-            },
-            fallbacks=[
-                cancel_hand,
-            ],
-        )
+        conversation_handler = ConversationHandler(
+            entry_points=[CommandHandler('ask_keys', self.ask_keys)],
+            states={self.LISTEN: [MessageHandler(Filters.text, self.get_keys, pass_user_data=True)]},
+            fallbacks=[cancel_hand])
 
         self.updater.dispatcher.add_handler(start_handler)
         self.updater.dispatcher.add_handler(get_message_handler)
         self.updater.dispatcher.add_handler(register_manager_handler)
-        self.updater.dispatcher.add_handler(conv_handler)
-
-        self.updater.dispatcher.add_handler(conv_handler)
+        self.updater.dispatcher.add_handler(conversation_handler)
 
     def ask_keys(self, update, context):
-        # Спросить ключ
-        update.message.reply_text(
-            'Введите новый ключ',
-        )
+        """method to request a new key input"""
+        update.message.reply_text('Введите новый ключ')
         return self.LISTEN
 
     def get_keys(self, update, context):
-        new_keys_str = update.message.text
-        if new_keys_str != '/cancel':
-            self.SECRET_KEY = new_keys_str
-            update.message.reply_text(text=f'Новый ключ: {self.SECRET_KEY}')
-            return ConversationHandler.END
-        else:
-            self.cancel_handler(update, context)
+        """method to get user input"""
+        self.SECRET_KEY = update.message.text
+        update.message.reply_text(text=f'Новый ключ: {self.SECRET_KEY}')
+        return ConversationHandler.END
 
     def cancel_handler(self, update, context):
         update.message.reply_text('Отмена. Для изменения ключей нажмите /ask_keys')
         return ConversationHandler.END
 
-
     def run_bot(self):
         """Running bot."""
-        # self.updater.start_webhook()
 
         TOKEN = config.BOT_ACCESS_TOKEN
         PORT = int(os.environ.get('PORT', '8443'))
-        # self.updater = Updater(TOKEN)
-        # add handlers
+
         self.updater.start_webhook(listen="0.0.0.0",
                                    port=PORT,
                                    url_path=TOKEN)
